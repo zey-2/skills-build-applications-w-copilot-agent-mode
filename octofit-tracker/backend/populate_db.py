@@ -1,209 +1,92 @@
 import os
+import sys
 import django
-import random
-import pymongo
-from datetime import datetime, timedelta
 from bson import ObjectId
+import random
 
+# Add the project directory to the Python path
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+# Set up Django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'octofit_tracker.settings')
 django.setup()
 
-# Connect to MongoDB directly to ensure proper data insertion
-client = pymongo.MongoClient('mongodb://localhost:27017/')
-db = client['octofit_db']
+# Import models after Django setup
+from octofit_tracker.models import User, Team, Activity, Leaderboard, Workout
+from django.db import connection
 
-# Clear existing collections
-db.users.delete_many({})
-db.teams.delete_many({})
-db.activity.delete_many({})
-db.leaderboard.delete_many({})
-db.workouts.delete_many({})
+print("Clearing existing data from all collections...")
+# Clear existing collections using direct MongoDB connection
+with connection.cursor() as cursor:
+    cursor.db_conn["users"].delete_many({})
+    cursor.db_conn["teams"].delete_many({})
+    cursor.db_conn["activity"].delete_many({})
+    cursor.db_conn["leaderboard"].delete_many({})
+    cursor.db_conn["workouts"].delete_many({})
 
-print("Cleared existing data from all collections.")
-
-# Create and insert test users
+print("Creating test users...")
+# Create users for Mergington High School
 users = [
-    {
-        "_id": ObjectId(),
-        "email": "john.smith@merington.edu",
-        "name": "John Smith",
-        "age": 16,
-        "grade": 10,
-        "fitness_level": "Intermediate"
-    },
-    {
-        "_id": ObjectId(),
-        "email": "emma.jones@merington.edu",
-        "name": "Emma Jones",
-        "age": 15,
-        "grade": 9,
-        "fitness_level": "Beginner"
-    },
-    {
-        "_id": ObjectId(),
-        "email": "michael.brown@merington.edu",
-        "name": "Michael Brown",
-        "age": 17,
-        "grade": 11,
-        "fitness_level": "Advanced"
-    },
-    {
-        "_id": ObjectId(),
-        "email": "sophia.davis@merington.edu",
-        "name": "Sophia Davis",
-        "age": 16,
-        "grade": 10,
-        "fitness_level": "Intermediate"
-    },
-    {
-        "_id": ObjectId(),
-        "email": "james.wilson@merington.edu",
-        "name": "James Wilson",
-        "age": 15,
-        "grade": 9,
-        "fitness_level": "Beginner"
-    }
+    User(id=ObjectId(), email="john.smith@mergington.edu", name="John Smith", age=16),
+    User(id=ObjectId(), email="emma.jones@mergington.edu", name="Emma Jones", age=15),
+    User(id=ObjectId(), email="michael.brown@mergington.edu", name="Michael Brown", age=17),
+    User(id=ObjectId(), email="sophia.davis@mergington.edu", name="Sophia Davis", age=16),
+    User(id=ObjectId(), email="james.wilson@mergington.edu", name="James Wilson", age=15),
 ]
 
-db.users.insert_many(users)
+# Save users individually
+for user in users:
+    user.save()
 print(f"Added {len(users)} users to the database.")
 
-# User references by email for easier team creation
-user_ids = {user['email']: user['_id'] for user in users}
-
-# Create and insert test teams
+print("Creating test teams...")
+# Create teams
 teams = [
-    {
-        "_id": ObjectId(),
-        "name": "Speed Demons",
-        "members": [user_ids["john.smith@merington.edu"], user_ids["emma.jones@merington.edu"]],
-        "created_at": datetime.now(),
-        "team_motto": "Faster than lightning!"
-    },
-    {
-        "_id": ObjectId(),
-        "name": "Muscle Maniacs",
-        "members": [user_ids["michael.brown@merington.edu"], user_ids["sophia.davis@merington.edu"]],
-        "created_at": datetime.now(),
-        "team_motto": "No pain, no gain!"
-    },
-    {
-        "_id": ObjectId(),
-        "name": "Fitness Fanatics",
-        "members": [user_ids["james.wilson@merington.edu"], user_ids["john.smith@merington.edu"]],
-        "created_at": datetime.now(),
-        "team_motto": "Fit for life!"
-    }
+    Team(id=ObjectId(), name="Speed Demons", members=[user.email for user in users[:2]]),
+    Team(id=ObjectId(), name="Muscle Maniacs", members=[user.email for user in users[2:4]]),
+    Team(id=ObjectId(), name="Fitness Fanatics", members=[users[4].email, users[0].email]),
 ]
 
-db.teams.insert_many(teams)
+# Save teams individually
+for team in teams:
+    team.save()
 print(f"Added {len(teams)} teams to the database.")
 
-# Team references by name for easier leaderboard creation
-team_ids = {team['name']: team['_id'] for team in teams}
-
-# Create and insert test activities
-activities = []
-activity_types = ["Running", "Walking", "Cycling", "Swimming", "Weightlifting", "Yoga", "HIIT"]
-
-for user in users:
-    # Generate 3-5 random activities per user
-    for _ in range(random.randint(3, 5)):
-        today = datetime.now()
-        random_days_ago = random.randint(0, 14)  # Activities within the last two weeks
-        activity_date = today - timedelta(days=random_days_ago)
-        
-        activities.append({
-            "_id": ObjectId(),
-            "user_id": user["_id"],
-            "type": random.choice(activity_types),
-            "duration": random.randint(15, 120),  # Duration in minutes
-            "calories_burned": random.randint(100, 800),
-            "date": activity_date,
-            "notes": f"Felt {'great' if random.random() > 0.5 else 'tired'} today!"
-        })
-
-db.activity.insert_many(activities)
-print(f"Added {len(activities)} activities to the database.")
-
-# Create and insert test leaderboard data
-leaderboard = []
-for team in teams:
-    leaderboard.append({
-        "_id": ObjectId(),
-        "team_id": team["_id"],
-        "points": random.randint(50, 500),
-        "rank": 0,  # Will be calculated based on points
-        "last_updated": datetime.now()
-    })
-
-# Sort by points and assign ranks
-sorted_leaderboard = sorted(leaderboard, key=lambda x: x["points"], reverse=True)
-for i, entry in enumerate(sorted_leaderboard):
-    entry["rank"] = i + 1
-
-db.leaderboard.insert_many(leaderboard)
-print(f"Added {len(leaderboard)} leaderboard entries to the database.")
-
-# Create and insert test workouts
-workouts = [
-    {
-        "_id": ObjectId(),
-        "name": "Morning Cardio",
-        "description": "30-minute cardio workout to kickstart your day.",
-        "difficulty": "Beginner",
-        "estimated_calories": 250,
-        "exercises": ["Jumping Jacks", "High Knees", "Butt Kicks", "Mountain Climbers"]
-    },
-    {
-        "_id": ObjectId(),
-        "name": "Core Crusher",
-        "description": "Intense core workout to strengthen your abs and back.",
-        "difficulty": "Intermediate",
-        "estimated_calories": 300,
-        "exercises": ["Plank", "Russian Twists", "Bicycle Crunches", "Leg Raises"]
-    },
-    {
-        "_id": ObjectId(),
-        "name": "Full Body HIIT",
-        "description": "High-intensity interval training for the entire body.",
-        "difficulty": "Advanced",
-        "estimated_calories": 450,
-        "exercises": ["Burpees", "Push-ups", "Squats", "Mountain Climbers", "Plank Jacks"]
-    },
-    {
-        "_id": ObjectId(),
-        "name": "Leg Day",
-        "description": "Focus on building leg strength and endurance.",
-        "difficulty": "Intermediate",
-        "estimated_calories": 350,
-        "exercises": ["Squats", "Lunges", "Calf Raises", "Wall Sits", "Box Jumps"]
-    },
-    {
-        "_id": ObjectId(),
-        "name": "Upper Body Blast",
-        "description": "Strengthen your arms, chest, and back.",
-        "difficulty": "Intermediate",
-        "estimated_calories": 300,
-        "exercises": ["Push-ups", "Pull-ups", "Dips", "Shoulder Press", "Bicep Curls"]
-    }
+print("Creating test activities...")
+# Create activities
+activities = [
+    Activity(id=ObjectId(), user=users[0], type="Running", duration=30),
+    Activity(id=ObjectId(), user=users[1], type="Walking", duration=45),
+    Activity(id=ObjectId(), user=users[2], type="Cycling", duration=60),
+    Activity(id=ObjectId(), user=users[3], type="Swimming", duration=40),
+    Activity(id=ObjectId(), user=users[4], type="Weightlifting", duration=55),
 ]
 
-db.workouts.insert_many(workouts)
+# Save activities individually
+for activity in activities:
+    activity.save()
+print(f"Added {len(activities)} activities to the database.")
+
+print("Creating test leaderboard entries...")
+# Create leaderboard entries
+Leaderboard(id=ObjectId(), team=teams[0], points=100).save()
+Leaderboard(id=ObjectId(), team=teams[1], points=85).save()
+Leaderboard(id=ObjectId(), team=teams[2], points=95).save()
+print("Added 3 leaderboard entries to the database.")
+
+print("Creating test workouts...")
+# Create workouts
+workouts = [
+    Workout(id=ObjectId(), name="Morning Cardio", description="30-minute cardio workout to kickstart your day."),
+    Workout(id=ObjectId(), name="Core Crusher", description="Intense core workout to strengthen your abs and back."),
+    Workout(id=ObjectId(), name="Full Body HIIT", description="High-intensity interval training for the entire body."),
+    Workout(id=ObjectId(), name="Leg Day", description="Focus on building leg strength and endurance."),
+    Workout(id=ObjectId(), name="Upper Body Blast", description="Strengthen your arms, chest, and back."),
+]
+
+# Save workouts individually
+for workout in workouts:
+    workout.save()
 print(f"Added {len(workouts)} workouts to the database.")
-
-# Verify data insertion
-users_count = db.users.count_documents({})
-teams_count = db.teams.count_documents({})
-activities_count = db.activity.count_documents({})
-leaderboard_count = db.leaderboard.count_documents({})
-workouts_count = db.workouts.count_documents({})
-
-print("\nData population summary:")
-print(f"- Users: {users_count}")
-print(f"- Teams: {teams_count}")
-print(f"- Activities: {activities_count}")
-print(f"- Leaderboard entries: {leaderboard_count}")
-print(f"- Workouts: {workouts_count}")
 
 print("\nTest data populated successfully!")
