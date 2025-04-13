@@ -143,3 +143,6 @@ CORS_ALLOW_HEADERS = [
     'authorization',
     'x-csrftoken',
 ]
+
+# Add the Codespace API base URL for Django REST API endpoints
+API_BASE_URL = "https://<your-codespace-prefix>-8000.app.github.dev"
