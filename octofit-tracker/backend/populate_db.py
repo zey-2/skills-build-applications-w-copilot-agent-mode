@@ -2,7 +2,7 @@ import os
 import sys
 import django
 from bson import ObjectId
-import random
+from datetime import timedelta
 
 # Add the project directory to the Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -25,13 +25,13 @@ with connection.cursor() as cursor:
     cursor.db_conn["workouts"].delete_many({})
 
 print("Creating test users...")
-# Create users for Mergington High School
+# Create users for Mergington High School with superhero usernames
 users = [
-    User(id=ObjectId(), email="john.smith@mergington.edu", name="John Smith", age=16),
-    User(id=ObjectId(), email="emma.jones@mergington.edu", name="Emma Jones", age=15),
-    User(id=ObjectId(), email="michael.brown@mergington.edu", name="Michael Brown", age=17),
-    User(id=ObjectId(), email="sophia.davis@mergington.edu", name="Sophia Davis", age=16),
-    User(id=ObjectId(), email="james.wilson@mergington.edu", name="James Wilson", age=15),
+    User(id=ObjectId(), email="thundergod@mergington.edu", name="Thunder God", age=16),
+    User(id=ObjectId(), email="metalgeek@mergington.edu", name="Metal Geek", age=15),
+    User(id=ObjectId(), email="zerocool@mergington.edu", name="Zero Cool", age=17),
+    User(id=ObjectId(), email="crashoverride@mergington.edu", name="Crash Override", age=16),
+    User(id=ObjectId(), email="sleeptoken@mergington.edu", name="Sleep Token", age=15),
 ]
 
 # Save users individually
@@ -42,9 +42,8 @@ print(f"Added {len(users)} users to the database.")
 print("Creating test teams...")
 # Create teams
 teams = [
-    Team(id=ObjectId(), name="Speed Demons", members=[user.email for user in users[:2]]),
-    Team(id=ObjectId(), name="Muscle Maniacs", members=[user.email for user in users[2:4]]),
-    Team(id=ObjectId(), name="Fitness Fanatics", members=[users[4].email, users[0].email]),
+    Team(id=ObjectId(), name="Blue Team", members=[users[0].email, users[1].email]),
+    Team(id=ObjectId(), name="Gold Team", members=[users[2].email, users[3].email, users[4].email]),
 ]
 
 # Save teams individually
@@ -53,35 +52,29 @@ for team in teams:
 print(f"Added {len(teams)} teams to the database.")
 
 print("Creating test activities...")
-# Create activities
-activities = [
-    Activity(id=ObjectId(), user=users[0], type="Running", duration=30),
-    Activity(id=ObjectId(), user=users[1], type="Walking", duration=45),
-    Activity(id=ObjectId(), user=users[2], type="Cycling", duration=60),
-    Activity(id=ObjectId(), user=users[3], type="Swimming", duration=40),
-    Activity(id=ObjectId(), user=users[4], type="Weightlifting", duration=55),
-]
-
-# Save activities individually
-for activity in activities:
-    activity.save()
-print(f"Added {len(activities)} activities to the database.")
+# Create activities with various types
+activities = []
+Activity(id=ObjectId(), user=users[0], type="Cycling", duration=60).save()
+Activity(id=ObjectId(), user=users[1], type="Crossfit", duration=120).save()
+Activity(id=ObjectId(), user=users[2], type="Running", duration=90).save()
+Activity(id=ObjectId(), user=users[3], type="Strength", duration=30).save()
+Activity(id=ObjectId(), user=users[4], type="Swimming", duration=75).save()
+print("Added 5 activities to the database.")
 
 print("Creating test leaderboard entries...")
 # Create leaderboard entries
 Leaderboard(id=ObjectId(), team=teams[0], points=100).save()
-Leaderboard(id=ObjectId(), team=teams[1], points=85).save()
-Leaderboard(id=ObjectId(), team=teams[2], points=95).save()
-print("Added 3 leaderboard entries to the database.")
+Leaderboard(id=ObjectId(), team=teams[1], points=90).save()
+print("Added 2 leaderboard entries to the database.")
 
 print("Creating test workouts...")
-# Create workouts
+# Create workouts with training descriptions
 workouts = [
-    Workout(id=ObjectId(), name="Morning Cardio", description="30-minute cardio workout to kickstart your day."),
-    Workout(id=ObjectId(), name="Core Crusher", description="Intense core workout to strengthen your abs and back."),
-    Workout(id=ObjectId(), name="Full Body HIIT", description="High-intensity interval training for the entire body."),
-    Workout(id=ObjectId(), name="Leg Day", description="Focus on building leg strength and endurance."),
-    Workout(id=ObjectId(), name="Upper Body Blast", description="Strengthen your arms, chest, and back."),
+    Workout(id=ObjectId(), name="Cycling Training", description="Training for a road cycling event"),
+    Workout(id=ObjectId(), name="Crossfit", description="Training for a crossfit competition"),
+    Workout(id=ObjectId(), name="Running Training", description="Training for a marathon"),
+    Workout(id=ObjectId(), name="Strength Training", description="Training for strength"),
+    Workout(id=ObjectId(), name="Swimming Training", description="Training for a swimming competition"),
 ]
 
 # Save workouts individually
