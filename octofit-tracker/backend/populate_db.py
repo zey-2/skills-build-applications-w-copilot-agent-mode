@@ -1,3 +1,4 @@
+# This script populates the database with test data for users, teams, activities, leaderboard entries, and workouts.
 import os
 import sys
 import django
