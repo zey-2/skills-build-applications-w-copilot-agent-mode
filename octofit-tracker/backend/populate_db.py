@@ -14,16 +14,14 @@ django.setup()
 
 # Import models after Django setup
 from octofit_tracker.models import User, Team, Activity, Leaderboard, Workout
-from django.db import connection
 
 print("Clearing existing data from all collections...")
-# Clear existing collections using direct MongoDB connection
-with connection.cursor() as cursor:
-    cursor.db_conn["users"].delete_many({})
-    cursor.db_conn["teams"].delete_many({})
-    cursor.db_conn["activity"].delete_many({})
-    cursor.db_conn["leaderboard"].delete_many({})
-    cursor.db_conn["workouts"].delete_many({})
+# Clear existing data using Django ORM
+User.objects.all().delete()
+Team.objects.all().delete()
+Activity.objects.all().delete()
+Leaderboard.objects.all().delete()
+Workout.objects.all().delete()
 
 print("Creating test users...")
 # Create users for Mergington High School with superhero usernames
